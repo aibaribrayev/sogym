@@ -3,7 +3,7 @@ BOT_TOKEN = "7485751066:AAF8QIut4s-vjQ4FZCNmY8b6bAn7RZy8_vY"
 ANIMALS_DATA = {
     "siyr": {
         "id": 1,
-        "name": "Angus Cow",
+        "name": "сиыр",
         "price_per_jilik": 50000,  # Price in KZT
         "total_jiliks": 12,
         "current_jiliks": 0,
@@ -12,7 +12,7 @@ ANIMALS_DATA = {
     },
     "zhylqy": {
         "id": 2,
-        "name": "Horse",
+        "name": "жылқы",
         "price_per_jilik": 50000,  # Price in KZT
         "total_jiliks": 12,
         "current_jiliks": 0,
@@ -21,24 +21,31 @@ ANIMALS_DATA = {
     },
 }
 
+
 GENERAL_INFO = """
-Welcome to our Collective Meat Ordering Bot!
+*ЖОҒАРЫ САПАЛЫ ЕТ*
+Біз таза жем-шөппен өсірілген, жас малдың етін ұсынамыз.
 
-We are dedicated to providing high-quality meat from trusted local producers. Our goal is to connect consumers directly with farmers, ensuring fresh and ethically sourced meat.
+*ТЕГІН ЖЕТКІЗУ*
+Жеткізу әрдайым тегін. Бір малдың еті жиналған соң, бір апта ішінде жеткіземіз.
 
-About Us:
-- We work with local farms to bring you the best quality meat.
-- All our animals are raised in a healthy and natural environment.
-- We ensure ethical treatment of animals and sustainable farming practices.
+*БҰЛ ҚАЛАЙ ЖҰМЫС ІСТЕЙДІ*
+1 *Біз Іріктейміз*
+Біз малды сапасы жоғары, сенімді фермерлерден аламыз.
 
-How it Works:
-1. Choose an option to see available animals for collective ordering.
-2. Contribute a certain number of jiliks to the animal of your choice.
-3. Once the total amount is collected, the meat will be prepared and delivered to you.
+2 *Сіз тапсырыс бересіз*
+Бізде 1 жіліктен 12 жілікке дейін тапсырыс беруге болады. Әр жіліктің салмағы шамамен 15-18 кг, ал орташа бағасы 50 000 теңге.
 
-Thank you for supporting local farmers and ethical meat production!
+3 *Біз жеткіземіз*
+12 жілікке, яғни 1 малға тапсырыс жиналған соң, біз малды сойып, жіліктеп, тегін жеткізіп береміз!
+
+*СИЫР ЕТІ ЖӘНЕ ЖЫЛҚЫ ЕТІ БАҒАСЫ*
+Сиыр еті жіліктеп: 2600 KZT/кг
+Жылқы еті жіліктеп: 2800 KZT/кг
+
+Адал, сапалы, балғын, жұмсақ, дәмді жас малдың еті - біздің басты мақсатымыз. Тапсырыс пен сенім сіздерден, сапалы қызмет бізден.
 """
 
-GENERAL_INFO_IMAGE_URL = "https://mir-s3-cdn-cf.behance.net/project_modules/max_3840/1cef5e18856979.562d374fe8ec4.jpg"  # Replace with your actual image URL
+GENERAL_INFO_IMAGE_URL = "https://mir-s3-cdn-cf.behance.net/project_modules/max_3840/1cef5e18856979.562d374fe8ec4.jpg"
 
-ORDER_DATA = {}  # Dictionary to hold order data temporarily
+ORDER_DATA = {}

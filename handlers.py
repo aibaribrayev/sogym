@@ -3,14 +3,17 @@ from config import ANIMALS_DATA, ORDER_DATA
 from utils import save_order_to_csv
 import re
 
+ADMIN_CHAT_ID = 1128870853
+
 
 def display_animal_info_handler(call, bot):
     animal = ANIMALS_DATA[call.data]
     if animal["current_jiliks"] >= animal["total_jiliks"]:
         full_message = (
-            f"🐎 *{animal['name']}*\n"
-            "The full amount was collected and now the meat is in the process of being prepared and delivered.\n"
-            "We will reach out when new animals will be available for sale."
+            f"🥩 *{animal['name']}*\n"
+            "Толық мөлшер жиналды, малды сойып жіліктеп болған соң сізге хабарласамыз.\n"
+            "Егер тапсырыстан бас тарту қажет болса, күннің соңына дейін осы нөмірге хабарласыңыз: +77007700370\n"
+            "Жаңадан мал сатылымға шыққанда хабарлаймыз."
         )
         bot.send_photo(
             call.message.chat.id,
@@ -21,16 +24,15 @@ def display_animal_info_handler(call, bot):
     else:
         available_jiliks = animal["total_jiliks"] - animal["current_jiliks"]
         animal_info = (
-            f" *{animal['name']}*\n"
-            f"Price per jilik: 50,000 KZT\n"
-            f"Total jiliks: 12\n"
-            f"Collected jiliks: {animal['current_jiliks']}\n"
-            f"Available jiliks: {available_jiliks}\n"
+            f"🥩 *{animal['name']}*\n"
+            f"1 жіліктің бағасы шамамен 50,000 KZT\n"
+            f"Қазір *{animal['current_jiliks']}* жілік жиналды\n"
+            f"Бір *{animal['name']}* толу үшін *{available_jiliks}* жілік қалды\n"
         )
 
         markup = types.InlineKeyboardMarkup()
         btn_contribute = types.InlineKeyboardButton(
-            "Contribute", callback_data=f"contribute_{call.data}"
+            "Тапсырыс беру", callback_data=f"contribute_{call.data}"
         )
         markup.add(btn_contribute)
 
@@ -51,8 +53,9 @@ def ask_contribution_handler(call, bot):
     ):
         full_message = (
             f"🥩 *{ANIMALS_DATA[animal_key]['name']}*\n"
-            "The full amount was collected and now the meat is in the process of being prepared and delivered.\n"
-            "We will reach out when new animals will be available for sale."
+            "Толық мөлшер жиналды, малды сойып жіліктеп болған соң тапсырыс берген кісілерге хабарласамыз.\n"
+            "Егер тапсырыстан бас тарту қажет болса, күннің соңына дейін осы нөмірге хабарласыңыз: +77007700370\n"
+            "Жаңадан мал сатылымға шыққанда хабарлаймыз."
         )
         bot.send_photo(
             call.message.chat.id,
@@ -60,10 +63,11 @@ def ask_contribution_handler(call, bot):
             caption=full_message,
             parse_mode="Markdown",
         )
+        show_main_menu(call.message.chat.id, bot)
     else:
         msg = bot.send_message(
             call.message.chat.id,
-            f"How many jiliks would you like to contribute to the {ANIMALS_DATA[animal_key]['name']}? (1-12)",
+            f"Қанша жілік {ANIMALS_DATA[animal_key]['name']} етін алғыңыз келеді? (1-{ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']})",
         )
         bot.register_next_step_handler(msg, ask_confirmation_handler, animal_key, bot)
 
@@ -72,16 +76,27 @@ def ask_confirmation_handler(message, animal_key, bot):
     try:
         jiliks = int(message.text)
         if jiliks <= 0 or jiliks > 12:
-            raise ValueError("Jiliks must be between 1 and 12.")
+            raise ValueError(
+                f"Жілік саны 1 мен {ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']} арасында болуы керек."
+            )
 
         total_price = jiliks * 50000
         if (
             jiliks + ANIMALS_DATA[animal_key]["current_jiliks"]
             > ANIMALS_DATA[animal_key]["total_jiliks"]
         ):
-            bot.reply_to(
-                message,
-                f"Sorry, you can only contribute up to {ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']} jiliks.",
+            markup = types.InlineKeyboardMarkup()
+            btn_main_menu = types.InlineKeyboardButton(
+                "Бас мәзірге оралу", callback_data="main_menu"
+            )
+            markup.add(btn_main_menu)
+            msg = bot.send_message(
+                message.chat.id,
+                f"Кешіріңіз, қазір тек {ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']} жілік қоса аласыз.",
+                reply_markup=markup,
+            )
+            bot.register_next_step_handler(
+                msg, ask_confirmation_handler, animal_key, bot
             )
             return
 
@@ -92,18 +107,28 @@ def ask_confirmation_handler(message, animal_key, bot):
         }
         markup = types.InlineKeyboardMarkup()
         btn_confirm = types.InlineKeyboardButton(
-            "Confirm", callback_data=f"confirm_{animal_key}_{jiliks}"
+            "Растау", callback_data=f"confirm_{animal_key}_{jiliks}"
         )
-        btn_cancel = types.InlineKeyboardButton("Cancel", callback_data="cancel")
+        btn_cancel = types.InlineKeyboardButton("Бас тарту", callback_data="cancel")
         markup.add(btn_confirm, btn_cancel)
 
         bot.send_message(
             message.chat.id,
-            f"Please confirm your contribution of {jiliks} jiliks to the {ANIMALS_DATA[animal_key]['name']}.\nTotal price: {total_price} KZT",
+            f"Сіз {jiliks} жілік {ANIMALS_DATA[animal_key]['name']} етін алуға тапсырыс бердіңіз. Растайсыз ба?\nЖалпы бағасы: {total_price} KZT",
             reply_markup=markup,
         )
     except ValueError:
-        bot.reply_to(message, "Please enter a valid number of jiliks (1-12).")
+        markup = types.InlineKeyboardMarkup()
+        btn_main_menu = types.InlineKeyboardButton(
+            "Бас мәзірге оралу", callback_data="main_menu"
+        )
+        markup.add(btn_main_menu)
+        msg = bot.send_message(
+            message.chat.id,
+            f"Жілік санын дұрыс енгізіңіз (1-{ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']}) немесе алдыңғы мәзірге қайтыңыз.",
+            reply_markup=markup,
+        )
+        bot.register_next_step_handler(msg, ask_confirmation_handler, animal_key, bot)
 
 
 def handle_contribution_handler(call, bot):
@@ -111,40 +136,51 @@ def handle_contribution_handler(call, bot):
         data = call.data.split("_")
         animal_key = data[1]
         jiliks = int(data[2])
+        total_price = jiliks * 50000  # Fix the total_price definition here
 
         ORDER_DATA[call.message.chat.id].update({"confirmed": True})
 
-        msg = bot.send_message(call.message.chat.id, "Please enter your name:")
-        bot.register_next_step_handler(msg, get_name_handler, animal_key, jiliks, bot)
+        msg = bot.send_message(
+            call.message.chat.id, "Көп рахмет! \nСіздің есіміңіз кім:"
+        )
+        bot.register_next_step_handler(
+            msg, get_name_handler, animal_key, jiliks, bot, total_price
+        )
     except Exception as e:
-        bot.send_message(call.message.chat.id, f"An error occurred: {str(e)}")
+        bot.send_message(call.message.chat.id, f"Бір жерде қате болды: {str(e)}")
+        show_main_menu(call.message.chat.id, bot)
 
 
-def get_name_handler(message, animal_key, jiliks, bot):
+def get_name_handler(message, animal_key, jiliks, bot, total_price):
     ORDER_DATA[message.chat.id]["name"] = message.text
-    msg = bot.send_message(message.chat.id, "Please enter your phone number:")
-    bot.register_next_step_handler(msg, get_phone_handler, animal_key, jiliks, bot)
+    msg = bot.send_message(message.chat.id, "Сізге қай нөмірге хабарласайық:")
+    bot.register_next_step_handler(
+        msg, get_phone_handler, animal_key, jiliks, bot, total_price
+    )
 
 
-def get_phone_handler(message, animal_key, jiliks, bot):
+def get_phone_handler(message, animal_key, jiliks, bot, total_price):
     phone_number = message.text
     if not re.match(r"^\+?\d{10,15}$", phone_number):
         msg = bot.send_message(
             message.chat.id,
-            "Invalid phone number. Please enter a valid phone number (10-15 digits, optionally starting with '+'):",
+            "Телефон нөмірі дұрыс емес. Дұрыс телефон нөмірін енгізу қажет (10-15 сан, '+': белгісімен бастауға болады):",
         )
-        bot.register_next_step_handler(msg, get_phone_handler, animal_key, jiliks, bot)
+        bot.register_next_step_handler(
+            msg, get_phone_handler, animal_key, jiliks, bot, total_price
+        )
     else:
         ORDER_DATA[message.chat.id]["phone"] = phone_number
         msg = bot.send_message(
-            message.chat.id, "Please enter your address (link in 2GIS or Google Maps):"
+            message.chat.id,
+            "Мекенжайыңызды енгізіңіз (2GIS немесе Google Maps сілтемесі):",
         )
         bot.register_next_step_handler(
-            msg, get_address_handler, animal_key, jiliks, bot
+            msg, get_address_handler, animal_key, jiliks, bot, total_price
         )
 
 
-def get_address_handler(message, animal_key, jiliks, bot):
+def get_address_handler(message, animal_key, jiliks, bot, total_price):
     try:
         address = message.text
         url_pattern = re.compile(
@@ -154,10 +190,10 @@ def get_address_handler(message, animal_key, jiliks, bot):
         if not url_pattern.search(address):
             msg = bot.send_message(
                 message.chat.id,
-                "Invalid address link. Please enter a valid 2GIS or Google Maps link:",
+                "Сілтеме дұрыс емес. Дұрыс 2GIS немесе Google Maps сілтемесін енгізіңіз:",
             )
             bot.register_next_step_handler(
-                msg, get_address_handler, animal_key, jiliks, bot
+                msg, get_address_handler, animal_key, jiliks, bot, total_price
             )
         else:
             ORDER_DATA[message.chat.id]["address"] = address
@@ -172,9 +208,9 @@ def get_address_handler(message, animal_key, jiliks, bot):
                     "total_jiliks"
                 ]
                 full_message = (
-                    f"🐎 *{ANIMALS_DATA[animal_key]['name']}*\n"
-                    "The full amount was collected and now the meat is in the process of being prepared and delivered.\n"
-                    "We will reach out when new animals will be available for sale."
+                    f"🥩 *{ANIMALS_DATA[animal_key]['name']}*\n"
+                    "Толық мөлшер жиналды, малды сойып жіліктеп болған соң сізге хабарласамыз.\n"
+                    "Жаңадан мал сатылымға шыққанда хабарлаймыз."
                 )
                 bot.send_photo(
                     message.chat.id,
@@ -186,11 +222,10 @@ def get_address_handler(message, animal_key, jiliks, bot):
                 animal = ANIMALS_DATA[animal_key]
                 available_jiliks = animal["total_jiliks"] - animal["current_jiliks"]
                 animal_info = (
-                    f"🥩 *{animal['name']}*\n"
-                    f"Price per jilik: 50,000 KZT\n"
-                    f"Total jiliks: 12\n"
-                    f"Collected jiliks: {animal['current_jiliks']}\n"
-                    f"Available jiliks: {available_jiliks}\n"
+                    "Бізге сенім артып тапсырыс бергеніңізге көп рахмет! \n\n"
+                    "Қажетті адам саны жиналған соң етті адал сойып, жіліктеп болған соң сізге хабарласамыз.\n\n"
+                    f"Қазір *{animal['current_jiliks']}* жілік жиналды\n"
+                    f"Бір *{animal['name']}* толу үшін *{available_jiliks}* жілік қалды\n"
                 )
 
                 bot.send_photo(
@@ -200,14 +235,39 @@ def get_address_handler(message, animal_key, jiliks, bot):
                     parse_mode="Markdown",
                 )
 
+            send_update_to_all_users(
+                animal_key, jiliks, bot, exclude_id=message.chat.id
+            )
+
+            show_main_menu(message.chat.id, bot)
+
             bot.send_message(
-                message.chat.id, "Your order has been confirmed and saved."
+                ADMIN_CHAT_ID,
+                f"Жаңа тапсырыс қабылданды! {jiliks} жілік {ANIMALS_DATA[animal_key]['name']}.\n"
+                f"Жалпы бағасы: {total_price} KZT\n"
+                f"Есімі: {ORDER_DATA[message.chat.id]['name']}\n"
+                f"Телефон нөмірі: {ORDER_DATA[message.chat.id]['phone']}\n"
+                f"Мекенжайы: {ORDER_DATA[message.chat.id]['address']}\n",
             )
     except Exception as e:
-        bot.send_message(message.chat.id, f"An error occurred: {str(e)}")
+        bot.send_message(message.chat.id, f"Бір жерде қате болды: {str(e)}")
+        show_main_menu(message.chat.id, bot)
+
+
+def send_update_to_all_users(animal_key, jiliks, bot, exclude_id=None):
+    for chat_id in ORDER_DATA:
+        if ORDER_DATA[chat_id]["animal_key"] == animal_key and chat_id != exclude_id:
+            bot.send_message(
+                chat_id,
+                f"Жаңа жілік қосылды! Қазір {ANIMALS_DATA[animal_key]['current_jiliks']} жілік жиналды. Бір {ANIMALS_DATA[animal_key]['name']} толу үшін {ANIMALS_DATA[animal_key]['total_jiliks'] - ANIMALS_DATA[animal_key]['current_jiliks']} жілік қалды.\nДостарыңызға айтыңыз, тез толсын!",
+            )
 
 
 def cancel_contribution_handler(call, bot):
     if call.message.chat.id in ORDER_DATA:
         del ORDER_DATA[call.message.chat.id]
-    bot.send_message(call.message.chat.id, "Contribution cancelled.")
+    show_main_menu(call.message.chat.id, bot)
+
+
+def show_main_menu(chat_id, bot):
+    bot.send_message(chat_id, "Бас мәзірге оралу үшін /start командасын басыңыз.")

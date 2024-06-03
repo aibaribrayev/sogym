@@ -11,6 +11,11 @@ from handlers import (
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
+@bot.callback_query_handler(func=lambda call: call.data == "main_menu")
+def handle_main_menu(call):
+    send_welcome(call.message)
+
+
 @bot.message_handler(commands=["start", "about"])
 def send_welcome(message):
     bot.send_photo(
@@ -20,11 +25,11 @@ def send_welcome(message):
         parse_mode="Markdown",
     )
     markup = types.InlineKeyboardMarkup()
-    btn_siyr = types.InlineKeyboardButton("Siyr", callback_data="siyr")
-    btn_zhylqy = types.InlineKeyboardButton("Zhylqy", callback_data="zhylqy")
+    btn_siyr = types.InlineKeyboardButton("Сиыр", callback_data="siyr")
+    btn_zhylqy = types.InlineKeyboardButton("Жылқы", callback_data="zhylqy")
     markup.add(btn_siyr, btn_zhylqy)
 
-    welcome_message = "Please choose an option:"
+    welcome_message = "Таңдаңыз:"
     bot.send_message(message.chat.id, welcome_message, reply_markup=markup)
 
 
